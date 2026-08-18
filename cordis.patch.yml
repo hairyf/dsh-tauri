@@ -1,0 +1,8 @@
+# dsh-tauri bundle patch: 把本插件的浏览器名册行挂入 web profile。
+#
+# 本文件随包分发（dsh.bundle.patch），`dsh plugin add` 安装后会自动作为
+# bundle 层参与 profile 组合；行内 `name` 相对本包解析（与官方 bundle patch
+# 一致），node 半区据此扫描 `exports["./client"]` 并服务 /plugins/dsh-tauri/client.js。
+- insert:
+    - id: dsh-tauri
+      name: dsh-tauri
