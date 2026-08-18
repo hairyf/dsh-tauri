@@ -8,6 +8,10 @@ Mounts a native-style top nav bar (54px) inside the DeepSeek Harness web UI:
 - 最小化 / 最大化 / 后台化（X，隐藏到托盘）——全部通过 iframe event 发给宿主
   Tauri 窗口处理（宿主侧 `use-iframe-tauri.ts` 监听）
 
+DOM 位置：导航栏通过 portal 渲染为 `<body>` 的**第一个子节点**（应用之上的
+兄弟元素），不嵌套在 AppFrame / `shell.overlay` 等应用内部结构里；slot 注册
+只承担生命周期与 locale/inject 装配。
+
 外观：深色主题背景 `rgb(21, 21, 23)`，亮色主题 `rgb(255, 255, 255)`（跟随
 `body[data-ds-dark-theme]`）。组件栈：`@heroui/react`（v2，兼容 iframe 内的
 React 18）+ `@gravity-ui/icons`。
