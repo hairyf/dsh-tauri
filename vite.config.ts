@@ -31,6 +31,12 @@ const LOADER_EXTERNALS = [
 
 export default defineConfig({
   plugins: [react()],
+  // 浏览器 bundle 内联了 react-aria / framer-motion 等运行时分支，会直接读取
+  // process.env.NODE_ENV；Vite lib 模式不会自动替换，必须显式 define，
+  // 否则 factory 执行时抛 ReferenceError: process is not defined。
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
   build: {
     lib: {
       entry: 'src/client/index.ts',
