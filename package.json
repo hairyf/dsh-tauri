@@ -15,8 +15,11 @@
     "type": "git",
     "url": "git+https://github.com/hairyf/dsh-tauri.git"
   },
-  "main": "lib/client.js",
+  "main": "lib/index.js",
   "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
     "./client": {
       "default": "./lib/client.js"
     },
@@ -41,7 +44,7 @@
     }
   },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && tsc -p tsconfig.node.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
