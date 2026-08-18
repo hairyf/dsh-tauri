@@ -9,7 +9,8 @@
  *
  * 另：官方侧边栏 logo 行自带的「收起侧边栏」按钮与宿主顶部导航栏的侧边栏
  * 开关重复，插件加载时用一条 CSS 规则把它隐藏（折叠态窄栏的「打开侧边栏」
- * 按钮保留，窄栏恢复仍靠它）。
+ * 按钮保留，窄栏恢复仍靠它）；同时把品牌词标按钮（aria-label「新建会话」，
+ * CSS module 类名是生成哈希、不稳定）的内容改为水平居中。
  *
  * 服务依赖（inject）：layout（侧边栏切换）。locale/slots 均不再需要。
  */
@@ -29,20 +30,29 @@ export const inject = ['layout']
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => {
-    // 隐藏官方侧边栏 logo 行的「收起侧边栏」按钮：宿主导航栏已有侧边栏开关，
-    // 应用内这个折叠按钮属于重复控件。选择器匹配折叠态的 aria-label 文案
-    // （zh/en 两套）；CSS 选择器天然覆盖 React 后续重渲染，卸载时移除样式。
+    // 侧边栏 UI 微调（一律用稳定的 aria-label 属性选择器，不用生成哈希的
+    // CSS module 类名）：
+    // 1. 隐藏 logo 行的「收起侧边栏」按钮：宿主导航栏已有侧边栏开关，应用内
+    //    这个折叠按钮属于重复控件。只匹配折叠态文案（zh/en），窄栏恢复用的
+    //    「打开侧边栏」按钮保留。
+    // 2. 品牌词标按钮（与工具栏「新建会话」按钮共用 aria-label，后者本就
+    //    居中，此规则对其是 no-op）默认 flex-start，改为水平居中。
+    // CSS 选择器天然覆盖 React 后续重渲染，卸载时移除样式。
     const style = document.createElement('style')
-    style.id = 'dsh-tauri:hide-sidebar-collapse'
+    style.id = 'dsh-tauri:sidebar-tweaks'
     style.textContent = [
       'button[aria-label="收起侧边栏"],',
       'button[aria-label="Collapse sidebar"] {',
       '  display: none !important;',
       '}',
+      'button[aria-label="新建会话"],',
+      'button[aria-label="New session"] {',
+      '  justify-content: center !important;',
+      '}',
     ].join('\n')
     document.head.appendChild(style)
     return () => style.remove()
-  }, 'dsh-tauri: hide official sidebar collapse button')
+  }, 'dsh-tauri: sidebar tweaks (hide collapse toggle, center brand)')
 
   ctx.effect(() => setupNavBridge({
     toggleSidebar: () => { ctx.layout.toggleSidebar() },
