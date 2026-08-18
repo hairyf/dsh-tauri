@@ -57,13 +57,12 @@ export function NavBar(props: NavBarProps) {
   const [portalEl, setPortalEl] = useState<HTMLDivElement | null>(null)
 
   // 挂载：在 <body> 顶部创建 portal 容器（prepend = 应用之上的兄弟），
-  // 并通知宿主插件已就绪（隐藏系统标题栏）。
+  // 并通知宿主插件已就绪（隐藏壳层导航栏）。
   useEffect(() => {
     const el = document.createElement('div')
     el.dataset.dshTauriNavRoot = ''
     document.body.prepend(el)
     setPortalEl(el)
-    window.parent?.postMessage({ source: 'dsh-tauri', type: 'dsh://tauri-ready' }, '*')
 
     // 预防补丁：声明标题栏兼容（data-dsh-title-bar-compat）并强制
     // --dsh-title-bar-strip = 44px，让 better-sidebar 等插件把顶部元素
@@ -82,6 +81,36 @@ export function NavBar(props: NavBarProps) {
       else {
         document.body.style.setProperty('--dsh-title-bar-strip', prevStrip)
       }
+    }
+  }, [])
+
+  // 就绪握手：发 dsh://tauri-ready 直到宿主回 dsh://tauri-ack
+  // （防御宿主监听器晚于插件挂载的时序问题；收到 ack 后停止重试）。
+  useEffect(() => {
+    const SRC = 'dsh-tauri'
+    let stopped = false
+    let timer: number | undefined
+
+    function send() {
+      if (stopped) return
+      window.parent?.postMessage({ source: SRC, type: 'dsh://tauri-ready' }, '*')
+    }
+    send()
+    timer = window.setInterval(send, 2000)
+
+    function onMessage(event: MessageEvent<{ source?: string, type?: string }>) {
+      if (stopped) return
+      if (event.data?.source === SRC && event.data?.type === 'dsh://tauri-ack') {
+        stopped = true
+        if (timer !== undefined) window.clearInterval(timer)
+      }
+    }
+    window.addEventListener('message', onMessage)
+
+    return () => {
+      stopped = true
+      if (timer !== undefined) window.clearInterval(timer)
+      window.removeEventListener('message', onMessage)
     }
   }, [])
 

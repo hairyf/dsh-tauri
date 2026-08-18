@@ -24,6 +24,7 @@ export const NAV_CSS = `
   --dsh-tauri-muted: #61666b;
   --dsh-tauri-hover: rgba(0, 0, 0, 0.06);
   --dsh-tauri-active: rgba(0, 0, 0, 0.1);
+  --dsh-tauri-line: rgba(0, 0, 0, 0.12);
   --dsh-tauri-danger: #f25a5a;
 
   position: fixed;
@@ -37,6 +38,7 @@ export const NAV_CSS = `
   padding: 0 6px;
   box-sizing: border-box;
   background: var(--dsh-tauri-bg);
+  border-bottom: 1px solid var(--dsh-tauri-line);
   z-index: 2147483000;
   user-select: none;
   -webkit-user-select: none;
@@ -47,6 +49,7 @@ body[data-ds-dark-theme] .dsh-tauri-nav {
   --dsh-tauri-muted: #adb2b8;
   --dsh-tauri-hover: rgba(255, 255, 255, 0.08);
   --dsh-tauri-active: rgba(255, 255, 255, 0.12);
+  --dsh-tauri-line: rgba(255, 255, 255, 0.12);
 }
 .dsh-tauri-nav__btn {
   display: inline-flex;
