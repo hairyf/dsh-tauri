@@ -25,7 +25,7 @@ import type { MouseEvent } from 'react'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 
 /** 导航栏高度：宿主据此保留顶部空间（与样式表一致）。 */
-export const NAV_BAR_HEIGHT = 54
+export const NAV_BAR_HEIGHT = 44
 
 /** 窗口控制动作（iframe event → 宿主 Tauri 窗口 API）。 */
 export type WindowAction = 'minimize' | 'maximize' | 'background' | 'drag-start'
@@ -64,8 +64,24 @@ export function NavBar(props: NavBarProps) {
     document.body.prepend(el)
     setPortalEl(el)
     window.parent?.postMessage({ source: 'dsh-tauri', type: 'dsh://tauri-ready' }, '*')
+
+    // 预防补丁：声明标题栏兼容（data-dsh-title-bar-compat）并强制
+    // --dsh-title-bar-strip = 44px，让 better-sidebar 等插件把顶部元素
+    // （toggleCluster/panel）让出导航栏高度，避免与本栏重叠。
+    const prevCompat = document.body.hasAttribute('data-dsh-title-bar-compat')
+    const prevStrip = document.body.style.getPropertyValue('--dsh-title-bar-strip')
+    document.body.setAttribute('data-dsh-title-bar-compat', '')
+    document.body.style.setProperty('--dsh-title-bar-strip', `${NAV_BAR_HEIGHT}px`)
+
     return () => {
       el.remove()
+      if (!prevCompat) document.body.removeAttribute('data-dsh-title-bar-compat')
+      if (prevStrip === '') {
+        document.body.style.removeProperty('--dsh-title-bar-strip')
+      }
+      else {
+        document.body.style.setProperty('--dsh-title-bar-strip', prevStrip)
+      }
     }
   }, [])
 
