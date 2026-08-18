@@ -106,8 +106,8 @@ export function NavBar(props: NavBarProps) {
         onPress={toggleSidebar}
       >
         {sidebarCollapsed
-          ? <ChevronsExpandHorizontal  />
-          : <ChevronsCollapseHorizontal  />}
+          ? <ChevronsExpandHorizontal />
+          : <ChevronsCollapseHorizontal />}
       </Button>
 
       <Button
@@ -120,7 +120,7 @@ export function NavBar(props: NavBarProps) {
         title={t('nav.back')}
         onPress={() => { window.history.back() }}
       >
-        <ArrowLeft  />
+        <ArrowLeft />
       </Button>
 
       <Button
@@ -133,7 +133,7 @@ export function NavBar(props: NavBarProps) {
         title={t('nav.forward')}
         onPress={() => { window.history.forward() }}
       >
-        <ArrowRight  />
+        <ArrowRight />
       </Button>
 
       {/* 空白区：窗口拖拽 + 双击最大化 */}
@@ -153,7 +153,7 @@ export function NavBar(props: NavBarProps) {
         title={t('window.minimize')}
         onPress={() => { postWindow('minimize') }}
       >
-        <Minus  />
+        <Minus />
       </Button>
 
       <Button
@@ -179,9 +179,10 @@ export function NavBar(props: NavBarProps) {
         title={t('window.background')}
         onPress={() => { postWindow('background') }}
       >
-        <Xmark  />
+        <Xmark />
       </Button>
     </div>
   )
 }
+
 
