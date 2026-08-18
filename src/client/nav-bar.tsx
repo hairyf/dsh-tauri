@@ -19,7 +19,8 @@ import {
   Xmark,
 } from '@gravity-ui/icons'
 import { Button } from '@heroui/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { MouseEvent } from 'react'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 
@@ -50,40 +51,49 @@ function postWindow(action: WindowAction): void {
 
 export function NavBar(props: NavBarProps) {
   const { t, toggleSidebar } = props
-  const barRef = useRef<HTMLDivElement | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  // body 级 portal 容器：导航栏作为 <body> 第一个子节点（应用之上的兄弟元素），
+  // 不嵌套在 AppFrame / shell.overlay 等应用内部结构里。
+  const [portalEl, setPortalEl] = useState<HTMLDivElement | null>(null)
 
-  // 挂载：通知宿主插件已就绪（隐藏系统标题栏），并为内容保留顶部 54px。
+  // 挂载：在 <body> 顶部创建 portal 容器（prepend = 应用之上的兄弟），
+  // 并通知宿主插件已就绪（隐藏系统标题栏）。
   useEffect(() => {
+    const el = document.createElement('div')
+    el.dataset.dshTauriNavRoot = ''
+    document.body.prepend(el)
+    setPortalEl(el)
     window.parent?.postMessage({ source: 'dsh-tauri', type: 'dsh://tauri-ready' }, '*')
-
-    // AppFrame 的 shell.overlay 层是 frame 的直接子节点；给 frame 加 padding-top，
-    // 让三列内容整体下移 54px（border-box 保证总高度不变，overflow:hidden 不裁切）。
-    const overlay = document.querySelector('[data-shell-overlay]')
-    const frame = overlay?.parentElement
-    if (frame !== null && frame !== undefined) {
-      const prevPadding = frame.style.paddingTop
-      const prevBox = frame.style.boxSizing
-      frame.style.boxSizing = 'border-box'
-      frame.style.paddingTop = `${NAV_BAR_HEIGHT}px`
-      return () => {
-        frame.style.paddingTop = prevPadding
-        frame.style.boxSizing = prevBox
-      }
+    return () => {
+      el.remove()
     }
   }, [])
 
-  // 侧边栏折叠状态：AppFrame 在 frame 上维护 data-sidebar-collapsed 属性，
-  // 观察它即可得到展开/收起两态，用于切换图标与提示文案。
+  // 内容偏移 + 侧边栏折叠状态：bar 已 portal 到 body，无法从自身向上 closest，
+  // 统一用 querySelector 定位 AppFrame 的 frame（shell.overlay 层的父节点）。
   useEffect(() => {
-    const bar = barRef.current
-    const frame = bar?.closest('[data-shell-overlay]')?.parentElement
+    const overlay = document.querySelector('[data-shell-overlay]')
+    const frame = overlay?.parentElement
     if (frame === null || frame === undefined) return
+
+    // 给 frame 加 padding-top，让三列内容整体下移 54px
+    // （border-box 保证总高度不变，overflow:hidden 不裁切）。
+    const prevPadding = frame.style.paddingTop
+    const prevBox = frame.style.boxSizing
+    frame.style.boxSizing = 'border-box'
+    frame.style.paddingTop = `${NAV_BAR_HEIGHT}px`
+
+    // AppFrame 在 frame 上维护 data-sidebar-collapsed 属性，观察它得到展开/收起两态。
     const update = () => setSidebarCollapsed(frame.hasAttribute('data-sidebar-collapsed'))
     update()
     const observer = new MutationObserver(update)
     observer.observe(frame, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] })
-    return () => observer.disconnect()
+
+    return () => {
+      frame.style.paddingTop = prevPadding
+      frame.style.boxSizing = prevBox
+      observer.disconnect()
+    }
   }, [])
 
   // 空白拖拽区：mousedown → drag-start（宿主 startDragging），双击 → 最大化。
@@ -93,8 +103,8 @@ export function NavBar(props: NavBarProps) {
     postWindow('drag-start')
   }
 
-  return (
-    <div ref={barRef} className="dsh-tauri-nav" data-dsh-tauri-nav>
+  const bar = (
+    <div className="dsh-tauri-nav" data-dsh-tauri-nav>
       <Button
         isIconOnly
         size="sm"
@@ -183,6 +193,9 @@ export function NavBar(props: NavBarProps) {
       </Button>
     </div>
   )
+
+  // 通过 portal 渲染到 body 级容器：导航栏是应用之上的兄弟元素，不进 AppFrame 内部
+  return portalEl === null ? null : createPortal(bar, portalEl)
 }
 
 

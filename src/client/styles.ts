@@ -6,7 +6,19 @@
  * 其余颜色用局部 CSS 变量表达，一并随主题切换。
  */
 export const NAV_CSS = `
+/* body 级 portal 容器：零尺寸、点击穿透，只承载 fixed 导航栏（应用之上的兄弟元素） */
+[data-dsh-tauri-nav-root] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+}
 .dsh-tauri-nav {
+  pointer-events: auto;
+
   --dsh-tauri-bg: rgb(255, 255, 255);
   --dsh-tauri-ink: #0f1115;
   --dsh-tauri-muted: #61666b;
