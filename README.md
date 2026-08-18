@@ -30,9 +30,11 @@ events（iframe → 宿主，`source: 'dsh-nav-bridge'`）：
 - 宿主与桌面端注入脚本（NAV_SHIM_JS）共用同一协议：插件加载后设置
   `window.__dsh_tauri_bridge__`，注入脚本据此让位（避免命令/事件双重执行）；
   插件卸载时清除标记，注入脚本随即恢复接管。
-- `page:firsted/lasted` 由虚拟历史栈推导（浏览器不暴露历史位置）：
-  包装 `pushState/replaceState` 记录同文档内的 URL 序列，`popstate` 时按 URL
-  定位当前位置；跨文档导航（未知 URL）时重置为单条会话。
+- 页面模型：dsh 应用不产生浏览器历史（无 pushState/hash 路由），「页面」=
+  侧边栏当前选中的会话（`[role="treeitem"][aria-selected="true"]`）。桥内维护
+  会话访问栈（纯内存）：用户点击会话 → 截断前进记录后追加新页并上报；
+  后退/前进 → 点击栈内对应会话行（行元素失效时按标题匹配兜底，标题取自
+  行菜单按钮 aria-label，zh/en 两套文案）。
 
 ## Install
 
