@@ -7,6 +7,10 @@
  * `ctx.layout.toggleSidebar`，后退/前进走 `window.history`），并把 dsh 状态
  * （侧边栏折叠、页面历史边界）回报给宿主。协议详见 `./bridge.ts`。
  *
+ * 另：官方侧边栏 logo 行自带的「收起侧边栏」按钮与宿主顶部导航栏的侧边栏
+ * 开关重复，插件加载时用一条 CSS 规则把它隐藏（折叠态窄栏的「打开侧边栏」
+ * 按钮保留，窄栏恢复仍靠它）。
+ *
  * 服务依赖（inject）：layout（侧边栏切换）。locale/slots 均不再需要。
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
@@ -24,6 +28,22 @@ export const inject = ['layout']
  * @param ctx - 客户端根上下文。
  */
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => {
+    // 隐藏官方侧边栏 logo 行的「收起侧边栏」按钮：宿主导航栏已有侧边栏开关，
+    // 应用内这个折叠按钮属于重复控件。选择器匹配折叠态的 aria-label 文案
+    // （zh/en 两套）；CSS 选择器天然覆盖 React 后续重渲染，卸载时移除样式。
+    const style = document.createElement('style')
+    style.id = 'dsh-tauri:hide-sidebar-collapse'
+    style.textContent = [
+      'button[aria-label="收起侧边栏"],',
+      'button[aria-label="Collapse sidebar"] {',
+      '  display: none !important;',
+      '}',
+    ].join('\n')
+    document.head.appendChild(style)
+    return () => style.remove()
+  }, 'dsh-tauri: hide official sidebar collapse button')
+
   ctx.effect(() => setupNavBridge({
     toggleSidebar: () => { ctx.layout.toggleSidebar() },
   }), 'dsh-tauri: nav bridge')
