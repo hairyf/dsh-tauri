@@ -1,42 +1,18 @@
-import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 /**
- * Client-plugin bundle for dsh-tauri.
+ * Client-plugin bundle for dsh-tauri（纯消息桥，无 UI）。
  *
  * The dsh web shell loads the browser half of a plugin as ONE self-contained
  * script that registers its factory on the shared module loader:
  *
  *   window.__ModuleLoader__.load({ id, factory: (require) => { ... } })
  *
- * - `react` / `react/jsx-runtime` stay external: they resolve through the
- *   loader's module table (the dsh web app provides React 18).
- * - Every other dependency (@heroui/react, @gravity-ui/icons, ...) is
- *   inlined into the bundle; the loader `require` never sees them.
- * - Output lands at lib/client.js (with its source map), which the node half
- *   serves under /plugins/dsh-tauri/client.js.
+ * 桥代码零运行时依赖（不 import 任何外部模块，类型导入在编译期擦除），
+ * 因此无需 external/define 配置；产物落盘 lib/client.js（含 source map），
+ * node half 在 /plugins/dsh-tauri/client.js 提供。
  */
-const LOADER_EXTERNALS = [
-  'react',
-  'react/jsx-runtime',
-  'react-dom',
-  'react-dom/client',
-  '@deepseek-ai/cordis',
-  '@deepseek-ai/dsh-client-ui-slots',
-  '@deepseek-ai/dsh-client-web-react',
-  '@deepseek-ai/dsh-client-ui-primitives',
-  '@deepseek-ai/dsh-client-ui-attachment',
-  '@deepseek-ai/dsh-client-schema-form',
-]
-
 export default defineConfig({
-  plugins: [react()],
-  // 浏览器 bundle 内联了 react-aria / framer-motion 等运行时分支，会直接读取
-  // process.env.NODE_ENV；Vite lib 模式不会自动替换，必须显式 define，
-  // 否则 factory 执行时抛 ReferenceError: process is not defined。
-  define: {
-    'process.env.NODE_ENV': JSON.stringify('production'),
-  },
   build: {
     lib: {
       entry: 'src/client/index.ts',
@@ -46,9 +22,7 @@ export default defineConfig({
     outDir: 'lib',
     sourcemap: true,
     target: 'es2020',
-    cssCodeSplit: false,
     rollupOptions: {
-      external: LOADER_EXTERNALS,
       output: {
         // 插件 bundle 必须是单文件：loader 无法解析 chunk 间的相对 require
         inlineDynamicImports: true,

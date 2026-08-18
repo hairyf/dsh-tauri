@@ -1,62 +1,30 @@
 /**
- * dsh-tauri 客户端插件体（browser half）。
+ * dsh-tauri 客户端插件体（browser half）：纯消息桥，无 UI、无运行时依赖。
  *
- * 挂载进 ui-layout 声明的 `shell.overlay`（root 作用域 list 席位，全帧浮动层，
- * 点击穿透由层本身处理，本组件根节点自动获得 pointer-events）。注册时声明
- * locale 命名空间并注入 `toggleSidebar`（背后是 ctx.layout.toggleSidebar）。
+ * 桌面端顶部导航栏（shell-nav-bar.tsx）常驻在 Tauri 宿主，其左侧三个控件
+ * （侧边栏 / 后退 / 前进）通过 postMessage 操控 iframe 内的 dsh 应用；
+ * 本插件是 iframe 内的接收端：把命令转发给 dsh（侧边栏切换走
+ * `ctx.layout.toggleSidebar`，后退/前进走 `window.history`），并把 dsh 状态
+ * （侧边栏折叠、页面历史边界）回报给宿主。协议详见 `./bridge.ts`。
  *
- * 服务依赖（inject）：slots（注册）、layout（shell.overlay 席位 + 侧边栏切换）、
- * locale（字典与 t 席位）。
+ * 服务依赖（inject）：layout（侧边栏切换）。locale/slots 均不再需要。
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
-import { NavBar } from './nav-bar'
-import { en, zh } from './locales'
-import type { NavKey } from './locales'
-import { injectNavStyles } from './styles'
-
-declare module '@deepseek-ai/dsh-client-ui-slots' {
-  interface LocaleNamespaceMap {
-    /** 导航栏控件文案（zh/en）。 */
-    'dsh-tauri': NavKey
-  }
-}
+import { setupNavBridge } from './bridge'
 
 /** 插件显示名（诊断元数据）。 */
 export const name = 'dsh-tauri'
 
-/** 需要的客户端服务：slots / layout / locale。 */
-export const inject = ['slots', 'layout', 'locale']
-
-/** 字典命名空间（与 LocaleNamespaceMap 合并键一致）。 */
-const NS = 'dsh-tauri'
+/** 需要的客户端服务：layout（侧边栏切换）。 */
+export const inject = ['layout']
 
 /**
- * 插件体：注入样式 → 注册字典 → 注册导航栏席位。
+ * 插件体：接管导航桥（置位接管标记 → 挂命令监听/状态观察/历史跟踪）。
  * @param ctx - 客户端根上下文。
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => {
-    const removeStyles = injectNavStyles()
-    return () => { removeStyles() }
-  }, 'dsh-tauri: nav styles')
-
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-tauri: dictionaries')
-
-  ctx.effect(() => {
-    // inject 是业务面工厂：toggleSidebar 背后是 layout 面板动作（ctx 闭包）
-    const dispose = ctx.slots.register(
-      {
-        name: 'shell.overlay',
-        id: 'dsh-tauri',
-        locale: NS,
-        inject: () => ({
-          toggleSidebar: () => { ctx.layout.toggleSidebar() },
-        }),
-      },
-      NavBar,
-    )
-    return () => { dispose() }
-  }, 'dsh-tauri: nav bar registration')
+  ctx.effect(() => setupNavBridge({
+    toggleSidebar: () => { ctx.layout.toggleSidebar() },
+  }), 'dsh-tauri: nav bridge')
 }
